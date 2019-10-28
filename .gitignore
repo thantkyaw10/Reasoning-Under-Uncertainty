@@ -2,6 +2,7 @@
 *.lay
 *.solution
 *.test
+*.py
 test_cases/CONFIG
 test_cases/q1/CONFIG
 test_cases/q2/CONFIG
@@ -9,3 +10,6 @@ test_cases/q3/CONFIG
 test_cases/q4/CONFIG
 test_cases/q5/CONFIG
 test_cases/extra/CONFIG
+VERSION
+test_cases/q6/CONFIG
+test_cases/q7/CONFIG
