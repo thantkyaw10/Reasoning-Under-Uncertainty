@@ -149,18 +149,26 @@ class ExactInference(InferenceModule):
         pacmanPosition = gameState.getPacmanPosition()
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #print "\n\nNoisy distance/observation: \n" + str(noisyDistance)+ "\nEmission Model: \n" + str(emissionModel) + "\npacman position: \n"+ str(pacmanPosition)
+        #util.raiseNotDefined()
 
         # Replace this code with a correct observation update
         # Be sure to handle the "jail" edge case where the ghost is eaten
         # and noisyDistance is None
-        allPossible = util.Counter()
-        for p in self.legalPositions:
-            trueDistance = util.manhattanDistance(p, pacmanPosition)
-            if emissionModel[trueDistance] > 0:
-                allPossible[p] = 1.0
+        allPossible = util.Counter() #Q(X) <- a dist over X, initially empty
+        if noisyDistance != None: #We have eaten the ghost
+            for p in self.legalPositions: #for each value x_i of X do
+                trueDistance = util.manhattanDistance(p, pacmanPosition) #Q(x_i) <- enumerate-all(bn.VARS, e_xi); where e_xi is e extended with X = x_i
+                if emissionModel[trueDistance] > 0:
+                    allPossible[p] = emissionModel[trueDistance] * self.beliefs[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
+                else:
+                    continue #    
+        else: 
+            allPossible[self.getJailPosition()] = 1.0
 
         "*** END YOUR CODE HERE ***"
+        #Y is the emission model
+        #y is legal ghost position ..... 
 
         allPossible.normalize()
         self.beliefs = allPossible
