@@ -225,7 +225,12 @@ class ExactInference(InferenceModule):
         positions after a time update from a particular position.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        allPossible = util.Counter() 
+        for oldPos in self.beliefs.keys():
+            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, oldPos))
+            for newPos, prob in newPosDist.items():
+                allPossible[newPos] += prob * self.beliefs[oldPos]
+        self.beliefs = allPossible
 
     def getBeliefDistribution(self):
         return self.beliefs
@@ -311,12 +316,12 @@ class ParticleFilter(InferenceModule):
             if emissionModel[trueDistance] > 0:
                 updatedBelief[p] = emissionModel[trueDistance] * currBelief[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
         updatedBelief.normalize()
-        
+
         
         if noisyDistance == None: #Special Case 1: when a ghost is captured by Pacman...
             for p in self.particles: #... all particles should be updated so that...
                 updatedBelief[p] = 0 #... the ghost appears in its prison cell, self.getJailPosition()
-            updatedBelief[self.getJailPosition] = 1.0
+            updatedBelief[self.getJailPosition()] = 1.0
         
         #print "\n\nupdatedBelief: \t" + str(updatedBelief)
         particle = [] #list that will replace/overwrite particles
