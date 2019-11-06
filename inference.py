@@ -225,7 +225,12 @@ class ExactInference(InferenceModule):
         positions after a time update from a particular position.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        allPossible = util.Counter() 
+        for oldPos in self.beliefs.keys():
+            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, oldPos))
+            for newPos, prob in newPosDist.items():
+                allPossible[newPos] += prob * self.beliefs[oldPos]
+        self.beliefs = allPossible
 
     def getBeliefDistribution(self):
         return self.beliefs
@@ -311,24 +316,21 @@ class ParticleFilter(InferenceModule):
             if emissionModel[trueDistance] > 0:
                 updatedBelief[p] = emissionModel[trueDistance] * currBelief[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
         updatedBelief.normalize()
-        
-        
+                
         if noisyDistance == None: #Special Case 1: when a ghost is captured by Pacman...
             for p in self.particles: #... all particles should be updated so that...
                 updatedBelief[p] = 0 #... the ghost appears in its prison cell, self.getJailPosition()
-            updatedBelief[self.getJailPosition] = 1.0
+            updatedBelief[self.getJailPosition()] = 1.0
         
-        #print "\n\nupdatedBelief: \t" + str(updatedBelief)
-        particle = [] #list that will replace/overwrite particles
         if updatedBelief.totalCount() == 0: #Special Case 2: When all particles receive 0 weight,.... 
         #"the total weight for a belief distribution can be found by calling totalCount on a Counter object"
             self.initializeUniformly(gameState)#... they should be recreated from the prior distribution by calling initializeUniformly. 
-        else: #convert the updatedBelief Counter to a list and convert into a list (which will be particles)
+        else: #convert the updatedBelief Counter to a list (which will be particles)
+            particle = [] #list that will replace/overwrite particles
             for i in range(0, self.numParticles): #for all of the positions...
                 particle.append(util.sample(updatedBelief))
-            self.particles = particle
-        #print "self.particles 334: " + str(self.particles)  #CHECKING seeing if this line prints, and code gets to it correctly
- 
+            self.particles = particle            
+
     def elapseTime(self, gameState):
         """
         Update beliefs for a time step elapsing.
