@@ -302,7 +302,6 @@ class ParticleFilter(InferenceModule):
         emissionModel = busters.getObservationDistribution(noisyDistance)
         pacmanPosition = gameState.getPacmanPosition()
         "*** YOUR CODE HERE ***"
-        #util.raiseNotDefined()
         updatedBelief = util.Counter() #will hold updated beliefs. Q(X) <- a dist over X, initially empty
         currBelief = self.getBeliefDistribution() #current beliefs distribution
 
@@ -312,12 +311,14 @@ class ParticleFilter(InferenceModule):
             if emissionModel[trueDistance] > 0:
                 updatedBelief[p] = emissionModel[trueDistance] * currBelief[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
         updatedBelief.normalize()
-        #print "updatedBelief 315: \t" + str(updatedBelief)
+        
+        
         if noisyDistance == None: #Special Case 1: when a ghost is captured by Pacman...
             for p in self.particles: #... all particles should be updated so that...
-                updatedBelief[p] = [self.getJailPosition] #... the ghost appears in its prison cell, self.getJailPosition()
+                updatedBelief[p] = 0 #... the ghost appears in its prison cell, self.getJailPosition()
+            updatedBelief[self.getJailPosition] = 1.0
         
-        print "\n\nupdatedBelief: \t" + str(updatedBelief)
+        #print "\n\nupdatedBelief: \t" + str(updatedBelief)
         particle = [] #list that will replace/overwrite particles
         if updatedBelief.totalCount() == 0: #Special Case 2: When all particles receive 0 weight,.... 
         #"the total weight for a belief distribution can be found by calling totalCount on a Counter object"
@@ -343,7 +344,6 @@ class ParticleFilter(InferenceModule):
         a belief distribution.
         """
         "*** YOUR CODE HERE ***"
-        #util.raiseNotDefined()
         #previous position (oldPos) is a position tuple from self.particles
         updatedParticles = [] #will hold the updated beliefs for a time step elapsing
 
@@ -366,7 +366,6 @@ class ParticleFilter(InferenceModule):
         for p in self.particles: #for each position in particles, ...
             updatedBelief[p] += 1.0 #... add 1 to the location/position's count (in the distribution)
         updatedBelief.normalize()
-        #print "\n updatedBelief 371: \n" + str(updatedBelief)
         return updatedBelief #normalize so that the total of all the values sum to 1
 
 class MarginalInference(InferenceModule):
