@@ -225,12 +225,7 @@ class ExactInference(InferenceModule):
         positions after a time update from a particular position.
         """
         "*** YOUR CODE HERE ***"
-        allPossible = util.Counter() 
-        for oldPos in self.beliefs.keys():
-            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, oldPos))
-            for newPos, prob in newPosDist.items():
-                allPossible[newPos] += prob * self.beliefs[oldPos]
-        self.beliefs = allPossible
+        util.raiseNotDefined()
 
     def getBeliefDistribution(self):
         return self.beliefs
@@ -265,15 +260,15 @@ class ParticleFilter(InferenceModule):
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
+        self.particles = []
         particle = [] #the list of particles
         count = 0 #counter; keeps track of how many particle positions have not yet been accounted for/added in the list
         
-        while count < self.numParticles: #so long as there are still particles whose positions have not been added, keep going
-            for p in self.legalPositions: #for each of the positions...
+        for p in self.legalPositions: #for each of the positions...
+            if count < self.numParticles: #... and if there are still particles whose positions have not been added, keep going
                 particle.append(p) #... add the position to the particles list
                 count = count + 1
         self.particles = particle #particles property of class
-        #the above line is a thing that can happen, and "setNumParticles" did it, sooooo....
         #print "self.particles: " + str(self.particles)  #seeing if this line prints, and code gets to it correctly
 
     def observe(self, observation, gameState):
@@ -308,24 +303,31 @@ class ParticleFilter(InferenceModule):
         pacmanPosition = gameState.getPacmanPosition()
         "*** YOUR CODE HERE ***"
         #util.raiseNotDefined()
-        print "self.particles: " + str(self.particles)  #seeing if this line prints, and code gets to it correctly
         updatedBelief = util.Counter() #will hold updated beliefs. Q(X) <- a dist over X, initially empty
+        currBelief = self.getBeliefDistribution() #current beliefs distribution
 
+        #The below code is the same process as in the Exact Inference class
+        for p in self.legalPositions:  #for each value x_i of X do
+            trueDistance = util.manhattanDistance(pacmanPosition, p) #Q(x_i) <- enumerate-all(bn.VARS, e_xi); where e_xi is e extended with X = x_i
+            if emissionModel[trueDistance] > 0:
+                updatedBelief[p] = emissionModel[trueDistance] * currBelief[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
+        updatedBelief.normalize()
+        #print "updatedBelief 315: \t" + str(updatedBelief)
         if noisyDistance == None: #Special Case 1: when a ghost is captured by Pacman...
-            for key in self.particles.keys(): #... all particles should be updated so that...
-                particles[key] = [self.getJailPosition] #... the ghost appears in its prison cell, self.getJailPosition()
-        else: 
-            #The below code is the same process as in the Exact Inference class
-            for p in self.legalPositions:  #for each value x_i of X do
-                trueDistance = util.manhattanDistance(p, pacmanPosition) #Q(x_i) <- enumerate-all(bn.VARS, e_xi); where e_xi is e extended with X = x_i
-                if emissionModel[trueDistance] > 0:
-                    #AS IN EXACT INFERENCE: belief[p] = emissionModel[trueDistance] * self.beliefs[p] 
-                    updatedBelief[p] = emissionModel[trueDistance] * self.particles[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
-            #"the total weight for a belief distribution can be found by calling totalCount on a Counter object"
-            if updatedBelief.totalCount == 0: #Special Case 2: When all particles receive 0 weight,.... 
-                self.initializeUniformly(gameState)#... they should be recreated from the prior distribution by calling initializeUniformly. 
-        self.particles = updatedBelief.normalize()
-
+            for p in self.particles: #... all particles should be updated so that...
+                updatedBelief[p] = [self.getJailPosition] #... the ghost appears in its prison cell, self.getJailPosition()
+        
+        print "\n\nupdatedBelief: \t" + str(updatedBelief)
+        particle = [] #list that will replace/overwrite particles
+        if updatedBelief.totalCount() == 0: #Special Case 2: When all particles receive 0 weight,.... 
+        #"the total weight for a belief distribution can be found by calling totalCount on a Counter object"
+            self.initializeUniformly(gameState)#... they should be recreated from the prior distribution by calling initializeUniformly. 
+        else: #convert the updatedBelief Counter to a list and convert into a list (which will be particles)
+            for i in range(0, self.numParticles): #for all of the positions...
+                particle.append(util.sample(updatedBelief))
+            self.particles = particle
+        #print "self.particles 334: " + str(self.particles)  #CHECKING seeing if this line prints, and code gets to it correctly
+ 
     def elapseTime(self, gameState):
         """
         Update beliefs for a time step elapsing.
@@ -341,7 +343,14 @@ class ParticleFilter(InferenceModule):
         a belief distribution.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #util.raiseNotDefined()
+        #previous position (oldPos) is a position tuple from self.particles
+        updatedParticles = [] #will hold the updated beliefs for a time step elapsing
+
+        for p in self.particles:
+            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, p))
+            updatedParticles.append(util.sample(newPosDist))
+        self.particles = updatedParticles
 
     def getBeliefDistribution(self):
         """
@@ -352,11 +361,13 @@ class ParticleFilter(InferenceModule):
         """
         "*** YOUR CODE HERE ***"
         #util.raiseNotDefined()
-        belief = util.Counter() #will hold current beliefs
-        
-        for pos in self.particles: #for each position in particles, ...
-            belief[pos] = belief[pos] + 1 #... add 1 to the location/position's count (in the distribution)
-        return belief.normalize() #normalize so that the total of all the values sum to 1
+
+        updatedBelief = util.Counter() #will be Counter converted from self.particles list
+        for p in self.particles: #for each position in particles, ...
+            updatedBelief[p] += 1.0 #... add 1 to the location/position's count (in the distribution)
+        updatedBelief.normalize()
+        #print "\n updatedBelief 371: \n" + str(updatedBelief)
+        return updatedBelief #normalize so that the total of all the values sum to 1
 
 class MarginalInference(InferenceModule):
     """
