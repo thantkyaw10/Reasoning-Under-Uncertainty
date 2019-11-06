@@ -155,23 +155,21 @@ class ExactInference(InferenceModule):
         # Replace this code with a correct observation update
         # Be sure to handle the "jail" edge case where the ghost is eaten
         # and noisyDistance is None
-        allPossible = util.Counter() #Q(X) <- a dist over X, initially empty
-        if noisyDistance != None: #We have eaten the ghost
+        belief = util.Counter() #Q(X) <- a dist over X, initially empty
+        if noisyDistance != None: 
             for p in self.legalPositions: #for each value x_i of X do
                 trueDistance = util.manhattanDistance(p, pacmanPosition) #Q(x_i) <- enumerate-all(bn.VARS, e_xi); where e_xi is e extended with X = x_i
                 if emissionModel[trueDistance] > 0:
-                    allPossible[p] = emissionModel[trueDistance] * self.beliefs[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
-                else:
-                    continue #    
-        else: 
-            allPossible[self.getJailPosition()] = 1.0
+                    belief[p] = emissionModel[trueDistance] * self.beliefs[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
+        else: #We have eaten the ghost
+            belief[self.getJailPosition()] = 1.0
 
         "*** END YOUR CODE HERE ***"
         #Y is the emission model
         #y is legal ghost position ..... 
 
-        allPossible.normalize()
-        self.beliefs = allPossible
+        belief.normalize()
+        self.beliefs = belief
 
     def elapseTime(self, gameState):
         """
@@ -262,6 +260,16 @@ class ParticleFilter(InferenceModule):
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
+        particle = [] #the list of particles
+        count = 0 #counter; keeps track of how many particle positions have not yet been accounted for/added in the list
+        
+        while count < self.numParticles: #so long as there are still particles whose positions have not been added, keep going
+            for p in self.legalPositions: #for each of the positions...
+                particle.append(p) #... add the position to the particles list
+                count = count + 1
+        self.particles = particle #particles property of class
+        #the above line is a thing that can happen, and "setNumParticles" did it, sooooo....
+        #print "self.particles: " + str(self.particles)  #seeing if this line prints, and code gets to it correctly
 
     def observe(self, observation, gameState):
         """
@@ -294,7 +302,24 @@ class ParticleFilter(InferenceModule):
         emissionModel = busters.getObservationDistribution(noisyDistance)
         pacmanPosition = gameState.getPacmanPosition()
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #util.raiseNotDefined()
+        print "self.particles: " + str(self.particles)  #seeing if this line prints, and code gets to it correctly
+        updatedBelief = util.Counter() #will hold updated beliefs. Q(X) <- a dist over X, initially empty
+
+        if noisyDistance == None: #Special Case 1: when a ghost is captured by Pacman...
+            for key in self.particles.keys(): #... all particles should be updated so that...
+                particles[key] = [self.getJailPosition] #... the ghost appears in its prison cell, self.getJailPosition()
+        else: 
+            #The below code is the same process as in the Exact Inference class
+            for p in self.legalPositions:  #for each value x_i of X do
+                trueDistance = util.manhattanDistance(p, pacmanPosition) #Q(x_i) <- enumerate-all(bn.VARS, e_xi); where e_xi is e extended with X = x_i
+                if emissionModel[trueDistance] > 0:
+                    #AS IN EXACT INFERENCE: belief[p] = emissionModel[trueDistance] * self.beliefs[p] 
+                    updatedBelief[p] = emissionModel[trueDistance] * self.particles[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
+            #"the total weight for a belief distribution can be found by calling totalCount on a Counter object"
+            if updatedBelief.totalCount == 0: #Special Case 2: When all particles receive 0 weight,.... 
+                self.initializeUniformly(gameState)#... they should be recreated from the prior distribution by calling initializeUniformly. 
+        self.particles = updatedBelief.normalize()
 
     def elapseTime(self, gameState):
         """
@@ -321,7 +346,12 @@ class ParticleFilter(InferenceModule):
         Counter object)
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        #util.raiseNotDefined()
+        belief = util.Counter() #will hold current beliefs
+        
+        for pos in self.particles: #for each position in particles, ...
+            belief[pos] = belief[pos] + 1 #... add 1 to the location/position's count (in the distribution)
+        return belief.normalize() #normalize so that the total of all the values sum to 1
 
 class MarginalInference(InferenceModule):
     """
