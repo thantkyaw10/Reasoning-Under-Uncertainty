@@ -316,7 +316,8 @@ class ParticleFilter(InferenceModule):
             if emissionModel[trueDistance] > 0:
                 updatedBelief[p] = emissionModel[trueDistance] * currBelief[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
         updatedBelief.normalize()
-                
+
+        
         if noisyDistance == None: #Special Case 1: when a ghost is captured by Pacman...
             for p in self.particles: #... all particles should be updated so that...
                 updatedBelief[p] = 0 #... the ghost appears in its prison cell, self.getJailPosition()
