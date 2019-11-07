@@ -350,9 +350,9 @@ class ParticleFilter(InferenceModule):
         #previous position (oldPos) is a position tuple from self.particles
         updatedParticles = [] #will hold the updated beliefs for a time step elapsing
 
-        for p in self.particles:
-            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, p))
-            updatedParticles.append(util.sample(newPosDist))
+        for p in self.particles: #for all the old positions from self.particles...            
+            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, p)) #distribution over new positions for the ghost, given its previous position (p) as well as Pacman's current position.
+            updatedParticles[p] = util.sample(newPosDist) #generate a sample from that belief distribution
         self.particles = updatedParticles
 
     def getBeliefDistribution(self):
