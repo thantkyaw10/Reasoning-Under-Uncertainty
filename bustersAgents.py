@@ -167,16 +167,15 @@ class GreedyBustersAgent(BustersAgent):
         maxGhostPos = []
         for ghostDist in livingGhostPositionDistributions: # Calculates likeliest pos for each ghost
             maxPos = ((0, 0), 0)
-            for pos, prob in ghostDist: 
+            for pos, prob in ghostDist.items(): 
                 if prob > maxPos[1]:
                     maxPos = (pos, prob)
             maxGhostPos.append(maxPos)
         
         # Finds closest ghost
         closeGhostPos = ()
-        minDist = 9999
+        minDist = 99999999
         for ghost in maxGhostPos:
-            closeGhost = ghost[0] #pos of closest ghost
             if self.distancer.getDistance(ghost[0], pacmanPosition) < minDist:
                 minDist = self.distancer.getDistance(ghost[0], pacmanPosition)
                 closeGhostPos = ghost[0] #position of closest (so-far) ghost
