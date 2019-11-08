@@ -149,12 +149,6 @@ class ExactInference(InferenceModule):
         pacmanPosition = gameState.getPacmanPosition()
 
         "*** YOUR CODE HERE ***"
-        #print "\n\nNoisy distance/observation: \n" + str(noisyDistance)+ "\nEmission Model: \n" + str(emissionModel) + "\npacman position: \n"+ str(pacmanPosition)
-        #util.raiseNotDefined()
-
-        # Replace this code with a correct observation update
-        # Be sure to handle the "jail" edge case where the ghost is eaten
-        # and noisyDistance is None
         belief = util.Counter() #Q(X) <- a dist over X, initially empty
         if noisyDistance != None: 
             for p in self.legalPositions: #for each value x_i of X do
@@ -225,11 +219,11 @@ class ExactInference(InferenceModule):
         positions after a time update from a particular position.
         """
         "*** YOUR CODE HERE ***"
-        allPossible = util.Counter() 
-        for oldPos in self.beliefs.keys():
-            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, oldPos))
-            for newPos, prob in newPosDist.items():
-                allPossible[newPos] += prob * self.beliefs[oldPos]
+        allPossible = util.Counter() # Counter for updated belief
+        for oldPos in self.beliefs.keys(): # Iterating over all old pos
+            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, oldPos)) # Gets P(newPos|oldPos) and newPos
+            for newPos, prob in newPosDist.items():# P(newPos) = sigma(P(newPos|oldPos) * P(oldPos))
+                allPossible[newPos] += prob * self.beliefs[oldPos]  # where oldPos is all positions that can reach newPos
         self.beliefs = allPossible
 
     def getBeliefDistribution(self):
@@ -274,7 +268,6 @@ class ParticleFilter(InferenceModule):
                 particle.append(p) #... add the position to the particles list
                 count = count + 1
         self.particles = particle #particles property of class
-        #print "self.particles: " + str(self.particles)  #seeing if this line prints, and code gets to it correctly
 
     def observe(self, observation, gameState):
         """
@@ -347,13 +340,18 @@ class ParticleFilter(InferenceModule):
         a belief distribution.
         """
         "*** YOUR CODE HERE ***"
-        #previous position (oldPos) is a position tuple from self.particles
-        updatedParticles = [] #will hold the updated beliefs for a time step elapsing
+        allPossible = util.Counter() 
+        currBelief = self.getBeliefDistribution()
+        # Same as in exact inference
+        for p in currBelief.keys():
+            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, p))
+            for newPos, prob in newPosDist.items():
+                allPossible[newPos] += prob * currBelief[p]
 
-        for p in self.particles: #for all the old positions from self.particles...            
-            newPosDist = self.getPositionDistribution(self.setGhostPosition(gameState, p)) #distribution over new positions for the ghost, given its previous position (p) as well as Pacman's current position.
-            updatedParticles[p] = util.sample(newPosDist) #generate a sample from that belief distribution
-        self.particles = updatedParticles
+        particle = [] #will hold the updated beliefs for a time step elapsing
+        for i in range(0, self.numParticles): #for all of the positions...
+            particle.append(util.sample(allPossible)) # sample and append particles
+        self.particles = particle
 
     def getBeliefDistribution(self):
         """
