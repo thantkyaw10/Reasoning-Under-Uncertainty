@@ -330,7 +330,7 @@ class ParticleFilter(InferenceModule):
             particle = [] #list that will replace/overwrite particles
             for i in range(0, self.numParticles): #for all of the positions...
                 particle.append(util.sample(updatedBelief))
-            self.particles = particle            
+            self.particles = particle
 
     def elapseTime(self, gameState):
         """
