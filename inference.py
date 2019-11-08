@@ -440,6 +440,14 @@ class JointParticleFilter:
         weight with each position) is incorrect and may produce errors.
         """
         "*** YOUR CODE HERE ***"
+        particle = [] #the list of particles
+        count = 0 #counter; keeps track of how many particle positions have not yet been accounted for/added in the list
+        
+        for i in range(0, self.numParticles): #for each position...
+            #add to particle list: a tuple of positions of each ghost (random placement because our initial prior)
+            particle.append(tuple([random.choice(self.legalPositions) for g in range(self.numGhosts)])) 
+        self.particles = particle #particles property of class
+
 
     def addGhostAgent(self, agent):
         """
@@ -554,7 +562,11 @@ class JointParticleFilter:
 
     def getBeliefDistribution(self):
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        belief = util.Counter()
+        for pos in self.particles: #for each position in particles, ...
+            belief[pos] += 1 #... add 1 to the location/position's count (in the distribution)
+        belief.normalize()
+        return belief #normalize so that the total of all the values sum to 1
 
 # One JointInference module is shared globally across instances of MarginalInference
 jointInference = JointParticleFilter()
