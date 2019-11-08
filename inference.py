@@ -445,7 +445,7 @@ class JointParticleFilter:
         
         for i in range(0, self.numParticles): #for each position...
             #add to particle list: a tuple of positions of each ghost (random placement because our initial prior)
-            particle.append(tuple([random.choice(self.legalPositions) for g in range(self.numGhosts)])) 
+            particle.append(tuple([random.choice(self.legalPositions) for ghost in range(self.numGhosts)])) 
         self.particles = particle #particles property of class
 
 
