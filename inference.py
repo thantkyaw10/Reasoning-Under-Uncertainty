@@ -494,8 +494,7 @@ class JointParticleFilter:
 
         "*** YOUR CODE HERE ***"
         #getObservationDistribution: Returns the factor P( noisyDistance | TrueDistances ), the likelihood of the provided noisyDistance conditioned upon all the possible true distances that could have generated it.
-        updatedBelief = util.Counter() #will hold updated beliefs. 
-        currBelief = self.getBeliefDistribution()
+        
 
         #CODE FOR SPECIAL CASE 1:
         for ghost in range(0,self.numGhosts):
@@ -503,15 +502,19 @@ class JointParticleFilter:
                 particle = []
                 #for every possible combination of positions of the ghost positions, the one eaten should appear in jail
                 for pos in self.particles:
-                    jProb = self.getParticleWithGhostInJail(pos, ghost)
-                    particle.append(jProb)
+                    jProb = self.getParticleWithGhostInJail(pos, ghost) # Helper func
+                    particle.append(jProb) # Append new particle without ghost in jail
                 self.particles = particle
 
+        updatedBelief = util.Counter() #will hold updated beliefs. 
+        currBelief = self.getBeliefDistribution()
+
         for p in currBelief.keys():
-            weight = 1
+            weight = 1 # Start weight at one
             for i in range(self.numGhosts):
                 trueDistance = util.manhattanDistance(pacmanPosition, p[i])
-                weight *= emissionModels[i][trueDistance]
+                if noisyDistances[i] != None: # Only calculate weight if it is not in jail
+                    weight *= emissionModels[i][trueDistance] # Calculates weights from evidence
             updatedBelief[p] = currBelief[p] * weight
             
         if updatedBelief.totalCount() == 0: #Special Case 2: When all particles receive 0 weight,.... 
