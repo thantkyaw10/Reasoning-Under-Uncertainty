@@ -574,7 +574,7 @@ class JointParticleFilter:
               positions a ghost (ghostIndex) controlled by a particular agent
               (ghostAgent) will move to in the supplied gameState.  All ghosts
               must first be placed in the gameState using setGhostPositions
-              above.
+              above
 
               The ghost agent you are meant to supply is
               self.ghostAgents[ghostIndex-1], but in this project all ghost
@@ -582,14 +582,14 @@ class JointParticleFilter:
         """
         newParticles = []
         for oldParticle in self.particles:
-            newParticle = list(oldParticle) # A list of ghost positions
+            newParticle = list(oldParticle) # A list of ghost positions 
             # now loop through and update each entry in newParticle...
 
             "*** YOUR CODE HERE ***"
-            for ghost in range(self.numGhosts): #for each of the ghosts (in order that they are in)
-                nState = setGhostPositions(gameState, [oldParticle]) #state where the position of all ghosts are set to the values in ghostPositionTuple
-                newDistr = getPositionDistributionForGhost(nState, ghost, self.ghostAgents[ghost]) #distribution over positions for this ghost based on nState
-                newParticle[ghost] = util.sample(newDistr) # sample and append particles
+            for i in range(self.numGhosts):
+                newPosDist = getPositionDistributionForGhost(setGhostPositions(gameState, oldParticle), i, self.ghostAgents[i])
+                sample = util.sample(newPosDist)
+                newParticle[i]= sample
 
             "*** END YOUR CODE HERE ***"
             newParticles.append(tuple(newParticle))
