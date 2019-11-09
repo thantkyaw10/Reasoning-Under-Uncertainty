@@ -497,6 +497,16 @@ class JointParticleFilter:
         updatedBelief = util.Counter() #will hold updated beliefs. 
         currBelief = self.getBeliefDistribution()
 
+        #CODE FOR SPECIAL CASE 1:
+        for ghost in range(0,self.numGhosts):
+            if noisyDistances[ghost] == None: #Special Case 1: when a ghost is captured by Pacman...
+                particle = []
+                #for every possible combination of positions of the ghost positions, the one eaten should appear in jail
+                for pos in self.particles:
+                    jProb = self.getParticleWithGhostInJail(pos, ghost)
+                    particle.append(jProb)
+                self.particles = particle
+
         for p in currBelief.keys():
             weight = 1
             for i in range(self.numGhosts):
@@ -511,17 +521,6 @@ class JointParticleFilter:
             particle = [] #will replace/overwrite self.particles
             for i in range(0, self.numParticles): #for all the positions
                 particle.append(util.sample(updatedBelief))
-
-            #CODE FOR SPECIAL CASE 1:
-            for ghost in range(0,self.numGhosts):
-                if noisyDistances[ghost] == None: #Special Case 1: when a ghost is captured by Pacman...
-                    particle = []
-                    #for every possible combination of positions of the ghost positions, the one eaten should appear in jail
-                    for pos in self.particles:
-                        jProb = self.getParticleWithGhostInJail(p, ghost)
-                        particle.append(jProb)
-
-                        
             self.particles = particle
 
                     
