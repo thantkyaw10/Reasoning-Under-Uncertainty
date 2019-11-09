@@ -585,7 +585,7 @@ class JointParticleFilter:
             "*** YOUR CODE HERE ***"
             for ghost in range(self.numGhosts): #for each of the ghosts (in order that they are in)
                 nState = setGhostPositions(gameState, [oldParticle]) #state where the position of all ghosts are set to the values in ghostPositionTuple
-                newDistr = getPositionDistributionForGhost(nState, ghost+1, self.ghostAgents[ghost]) #distribution over positions for this ghost based on nState
+                newDistr = getPositionDistributionForGhost(nState, ghost, self.ghostAgents[ghost]) #distribution over positions for this ghost based on nState
                 newParticle[ghost] = util.sample(newDistr) # sample and append particles
 
             "*** END YOUR CODE HERE ***"
