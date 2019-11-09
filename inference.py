@@ -439,11 +439,11 @@ class JointParticleFilter:
         """
         "*** YOUR CODE HERE ***"
         particle = [] #the list of particles
-        count = 0 #counter; keeps track of how many particle positions have not yet been accounted for/added in the list
+        posTups = list(itertools.product(self.legalPositions, repeat = self.numGhosts)) #tuples of ghost positions
+        gTups = random.shuffle(posTups) #permustations are not in random order (need to be because our initial prior), and must store particles in list type
         
-        for i in range(0, self.numParticles): #for each position...
-            #add to particle list: a tuple of positions of each ghost (random placement because our initial prior)
-            particle.append(tuple([random.choice(self.legalPositions) for g in range(self.numGhosts)])) 
+        for pos in posTups: #for each position...
+            particle.append(pos) #add to particle list: a tuple of positions of each ghost (random placement because our initial prior)
         self.particles = particle #particles property of class
 
     def addGhostAgent(self, agent):
@@ -495,39 +495,36 @@ class JointParticleFilter:
         "*** YOUR CODE HERE ***"
         #getObservationDistribution: Returns the factor P( noisyDistance | TrueDistances ), the likelihood of the provided noisyDistance conditioned upon all the possible true distances that could have generated it.
         updatedBelief = util.Counter() #will hold updated beliefs. 
+        currBelief = self.getBeliefDistribution()
 
-        for pos in self.particles: #for all the (old) positions
-            ghostPos = list(pos) #convert the tuple to a list
-            for ghost in range(self.numGhosts): #for each ghost = the number of sample to be maintained
-                trueDistance = util.manhattanDistance(ghostPos[ghost], pacmanPosition) #
-                posWeight = emissionModels[ghost][trueDistance] #W[i], adjust weights
-                    #emissionModels[ghost][num] --> the probability (from the distribution of the ghost-ith ghost) of truDistance "num"
-            updatedBelief[pos] += posWeight
-        
-        #SPECIAL CASE 1 => When ghost s captured by Pacman
-        for ghost in range(0,self.numGhosts):
-            if noisyDistances[ghost] == None: #Special Case 1: when a ghost is captured by Pacman...
-                for p in self.particles: #... all particles should be updated so that...
-                    updatedBelief[p] = 0 #... the ghost appears in its prison cell, self.getJailPosition()
-            updatedBelief[self.getJailPosition(ghost)] = 1.0
-        
-        #SPECIAL CASE 2 => When all particles receive 0 weight, they should be recreated from the prior distribution by calling initializeParticles
-        if updatedBelief.totalCount() == 0:
-            self.initializeParticles()
-        else: #convert the updatedBelief Counter to a list (which will be particles)
-            particle = [] #list that will replace/overwrite particles
-            for i in range(0, self.numParticles): #for all of the positions...
-                for ghost in range(self.numGhosts):
-                    particle.append(util.sample(updatedBelief)[ghost])
+        for p in currBelief.keys():
+            weight = 1
+            for i in range(self.numGhosts):
+                trueDistance = util.manhattanDistance(pacmanPosition, p[i])
+                weight *= emissionModels[i][trueDistance]
+            updatedBelief[p] = currBelief[p] * weight
+            
+        if updatedBelief.totalCount() == 0: #Special Case 2: When all particles receive 0 weight,.... 
+        #"the total weight for a belief distribution can be found by calling totalCount on a Counter object"
+            self.initializeParticles()#... they should be recreated from the prior distribution
+        else: #convert the updateBelief Counter to a list (which will be particles)
+            particle = [] #will replace/overwrite self.particles
+            for i in range(0, self.numParticles): #for all the positions
+                particle.append(util.sample(updatedBelief))
+
+            #CODE FOR SPECIAL CASE 1:
+            for ghost in range(0,self.numGhosts):
+                if noisyDistances[ghost] == None: #Special Case 1: when a ghost is captured by Pacman...
+                    particle = []
+                    #for every possible combination of positions of the ghost positions, the one eaten should appear in jail
+                    for pos in self.particles:
+                        jProb = self.getParticleWithGhostInJail(p, ghost)
+                        particle.append(jProb)
+
+                        
             self.particles = particle
 
- #DOn't forget that there are three ghosts. So you ...
- # Doesn't the weight of each position apply to all ghosts for that position
- # so then shouldn't weight be outside the numGhosts loop?
-
-
-
-
+                    
     def getParticleWithGhostInJail(self, particle, ghostIndex):
         """
         Takes a particle (as a tuple of ghost positions) and returns a particle
@@ -588,8 +585,8 @@ class JointParticleFilter:
 
             "*** YOUR CODE HERE ***"
             for ghost in range(self.numGhosts): #for each of the ghosts (in order that they are in)
-                setGhostPositions(gameState, [oldParticle]) #state where the position of all ghosts are set to the values in ghostPositionTuple
-                newDistr = getPositionDistributionForGhost(gameState, ghost+1, self.ghostAgents[ghost]) #distribution over positions for this ghost based on nState
+                nState = setGhostPositions(gameState, [oldParticle]) #state where the position of all ghosts are set to the values in ghostPositionTuple
+                newDistr = getPositionDistributionForGhost(nState, ghost+1, self.ghostAgents[ghost]) #distribution over positions for this ghost based on nState
                 newParticle[ghost] = util.sample(newDistr) # sample and append particles
 
             "*** END YOUR CODE HERE ***"
