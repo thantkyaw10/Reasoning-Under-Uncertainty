@@ -153,8 +153,7 @@ class ExactInference(InferenceModule):
         if noisyDistance != None: 
             for p in self.legalPositions: #for each value x_i of X do
                 trueDistance = util.manhattanDistance(p, pacmanPosition) #Q(x_i) <- enumerate-all(bn.VARS, e_xi); where e_xi is e extended with X = x_i
-                if emissionModel[trueDistance] > 0:
-                    belief[p] = emissionModel[trueDistance] * self.beliefs[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
+                belief[p] = emissionModel[trueDistance] * self.beliefs[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
         else: #We have eaten the ghost
             belief[self.getJailPosition()] = 1.0
 
@@ -306,8 +305,7 @@ class ParticleFilter(InferenceModule):
         #The below code is the same process as in the Exact Inference class
         for p in self.legalPositions:  #for each value x_i of X do
             trueDistance = util.manhattanDistance(pacmanPosition, p) #Q(x_i) <- enumerate-all(bn.VARS, e_xi); where e_xi is e extended with X = x_i
-            if emissionModel[trueDistance] > 0:
-                updatedBelief[p] = emissionModel[trueDistance] * currBelief[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
+            updatedBelief[p] = emissionModel[trueDistance] * currBelief[p] #In Psuedocode: P(y | parents(Y)) * Enumerate-All(rest(vars),e)
         updatedBelief.normalize()
 
         
@@ -445,9 +443,8 @@ class JointParticleFilter:
         
         for i in range(0, self.numParticles): #for each position...
             #add to particle list: a tuple of positions of each ghost (random placement because our initial prior)
-            particle.append(tuple([random.choice(self.legalPositions) for ghost in range(self.numGhosts)])) 
+            particle.append(tuple([random.choice(self.legalPositions) for g in range(self.numGhosts)])) 
         self.particles = particle #particles property of class
-
 
     def addGhostAgent(self, agent):
         """
@@ -487,6 +484,7 @@ class JointParticleFilter:
         particle. Since we store particles as tuples, they must be converted to
         a list, edited, and then converted back to a tuple. This is a common
         operation when placing a ghost in jail.
+
         """
         pacmanPosition = gameState.getPacmanPosition()
         noisyDistances = gameState.getNoisyGhostDistances()
@@ -495,6 +493,40 @@ class JointParticleFilter:
         emissionModels = [busters.getObservationDistribution(dist) for dist in noisyDistances]
 
         "*** YOUR CODE HERE ***"
+        #getObservationDistribution: Returns the factor P( noisyDistance | TrueDistances ), the likelihood of the provided noisyDistance conditioned upon all the possible true distances that could have generated it.
+        updatedBelief = util.Counter() #will hold updated beliefs. 
+
+        for pos in self.particles: #for all the (old) positions
+            ghostPos = list(pos) #convert the tuple to a list
+            for ghost in range(self.numGhosts): #for each ghost = the number of sample to be maintained
+                trueDistance = util.manhattanDistance(ghostPos[ghost], pacmanPosition) #
+                posWeight = emissionModels[ghost][trueDistance] #W[i], adjust weights
+                    #emissionModels[ghost][num] --> the probability (from the distribution of the ghost-ith ghost) of truDistance "num"
+            updatedBelief[pos] += posWeight
+        
+        #SPECIAL CASE 1 => When ghost s captured by Pacman
+        for ghost in range(0,self.numGhosts):
+            if noisyDistances[ghost] == None: #Special Case 1: when a ghost is captured by Pacman...
+                for p in self.particles: #... all particles should be updated so that...
+                    updatedBelief[p] = 0 #... the ghost appears in its prison cell, self.getJailPosition()
+            updatedBelief[self.getJailPosition(ghost)] = 1.0
+        
+        #SPECIAL CASE 2 => When all particles receive 0 weight, they should be recreated from the prior distribution by calling initializeParticles
+        if updatedBelief.totalCount() == 0:
+            self.initializeParticles()
+        else: #convert the updatedBelief Counter to a list (which will be particles)
+            particle = [] #list that will replace/overwrite particles
+            for i in range(0, self.numParticles): #for all of the positions...
+                for ghost in range(self.numGhosts):
+                    particle.append(util.sample(updatedBelief)[ghost])
+            self.particles = particle
+
+ #DOn't forget that there are three ghosts. So you ...
+ # Doesn't the weight of each position apply to all ghosts for that position
+ # so then shouldn't weight be outside the numGhosts loop?
+
+
+
 
     def getParticleWithGhostInJail(self, particle, ghostIndex):
         """
@@ -555,6 +587,10 @@ class JointParticleFilter:
             # now loop through and update each entry in newParticle...
 
             "*** YOUR CODE HERE ***"
+            for ghost in range(self.numGhosts): #for each of the ghosts (in order that they are in)
+                setGhostPositions(gameState, [oldParticle]) #state where the position of all ghosts are set to the values in ghostPositionTuple
+                newDistr = getPositionDistributionForGhost(gameState, ghost+1, self.ghostAgents[ghost]) #distribution over positions for this ghost based on nState
+                newParticle[ghost] = util.sample(newDistr) # sample and append particles
 
             "*** END YOUR CODE HERE ***"
             newParticles.append(tuple(newParticle))
